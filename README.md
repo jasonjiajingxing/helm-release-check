@@ -14,7 +14,11 @@ Release pods with Pending|ImagePullBackOff|CreateContainerConfigError|CrashLoopB
 # Usage
 Use it after helm install/upgrade or helmfile sync.   
 ```
+# Use with default filter label app.kubernetes.io/name
 ./helm-release-check.sh -n default -r hello-world
+
+# Use with custom filter label app
+./helm-release-check.sh -n default -r hello-world -l app
 ```
 
 
