@@ -143,9 +143,10 @@ function deployment_rollout_check()
   done
 
   new_pod_list=$(echo "$pod_list" | grep "${new_replicaset}")
+  all_pod_count=$(echo "$pod_list" | wc -l)
 
   # All pods are available
-  if [[ $replicas -eq $up_to_date ]] && [[ $replicas -eq $available ]]; then
+  if [[ $replicas -eq $up_to_date ]] && [[ $replicas -eq $available ]] && [[ $replicas -eq $all_pod_count ]]; then
     echo "Check passed."
     echo "Rollout succeeded!"
     return 0
