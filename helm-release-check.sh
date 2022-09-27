@@ -18,6 +18,11 @@ function release_existence_check()
 
   for wait_count in {1..3}; do
     found_release=$(helm list -q -n "${arg_ns}" --filter="^${arg_release_name}\$")
+    if [[ $? -ne 0 ]]; then
+      echo "Check failed: helm list failed"
+      break
+    fi 
+
     if [[ $found_release == "" ]]; then
       echo "Check failed: release $arg_release_name does not exist in namespace $arg_ns. Retrying..."
       sleep 2
@@ -38,6 +43,11 @@ function helm_status_check()
 
   for wait_count in {1..3}; do
     helm_status=$(helm status -n "${arg_ns}" "${arg_release_name}"  | grep 'STATUS' | awk '{print $2}')
+    if [[ $? -ne 0 ]]; then
+      echo "Check failed: helm status failed"
+      break
+    fi
+
     if [[ $helm_status != "deployed" ]]; then
       echo "Check failed: helm status is ${helm_status}. Retrying..."
       sleep 2
@@ -58,6 +68,12 @@ function rollout_check()
 
   for wait_count in {1..60}; do
     check_resources=$(kubectl get statefulsets,deployments -n ${arg_ns} --no-headers -l ${arg_label}=${arg_release_name} 2>&1)
+    if [[ $? -ne 0 ]]; then
+      echo "Check failed: kubectl get failed"
+      echo "Release failed!"
+      exit 1
+    fi
+
     echo "The List of resources found by 'kubectl get statefulset,deployment -n ${arg_ns} --no-headers -l ${arg_label}=${arg_release_name}'"
     echo "$check_resources"
     echo
@@ -122,10 +138,21 @@ function deployment_rollout_check()
   echo "rollout status is ${up_to_date}(up-to-date), ${available}(available) out of replicas ${replicas}"
   
   new_replicaset=$(kubectl describe -n "${arg_ns}" "${type_with_name}"  | grep '^NewReplicaSet' | awk '{print $2}')
+  if [[ $? -ne 0 ]]; then
+    echo "Check failed: kubectl describe failed"
+    echo "Release failed!"
+    exit 1
+  fi
 
   # Print both old and new pods on screen to give better context
   for wait_pods_count in {1..3}; do
     pod_list=$(kubectl get pods -n "${arg_ns}" -l "${arg_label}=${arg_release_name}" --sort-by=.metadata.creationTimestamp | grep "^${deployment_name}-" 2>&1)
+    if [[ $? -ne 0 ]]; then
+      echo "Check failed: kubectl describe failed"
+      echo "Release failed!"
+      exit 1
+    fi
+
     echo "pod list using filter ${arg_label}=${arg_release_name}:"
     echo "$pod_list"
     echo
